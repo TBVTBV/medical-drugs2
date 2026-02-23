@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import { formatPhone, getRankLabel, JOBS, RANKS, SYSTEM_ROLES } from "@/lib/constants";
 import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 import Papa from "papaparse";
+
+export interface UsersTabHandle {
+  export: () => void;
+}
 
 interface User {
   id: string;
@@ -19,14 +22,14 @@ interface User {
   roleExpirationDate: string | null;
 }
 
-export default function UsersTab() {
-  const router = useRouter();
+const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [deleteModal, setDeleteModal] = useState<User | null>(null);
   const [editModal, setEditModal] = useState<User | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterJob, setFilterJob] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +46,13 @@ export default function UsersTab() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const close = () => { setOpenMenuId(null); setMenuPosition(null); };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [openMenuId]);
 
   const handleDelete = async (user: User) => {
     const res = await fetch(`/api/users/${user.id}`, { method: "DELETE" });
@@ -75,6 +85,10 @@ export default function UsersTab() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  useImperativeHandle(ref, () => ({
+    export: handleExport,
+  }));
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -143,18 +157,6 @@ export default function UsersTab() {
 
       {/* Actions bar */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={() => router.push("/management/users/new")}
-          className="px-4 py-2 bg-[#5c6b3c] text-white rounded-lg text-sm font-medium hover:bg-[#4d5a32] transition-colors"
-        >
-          + Add User
-        </button>
-        <button
-          onClick={handleExport}
-          className="px-4 py-2 bg-stone-200 dark:bg-stone-700 rounded-lg text-sm font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
-        >
-          Export CSV
-        </button>
         <label className="px-4 py-2 bg-stone-200 dark:bg-stone-700 rounded-lg text-sm font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors cursor-pointer">
           Import CSV
           <input
@@ -188,17 +190,68 @@ export default function UsersTab() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white dark:bg-stone-800 rounded-xl shadow-sm overflow-x-auto">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {filteredUsers.length === 0 && (
+          <p className="text-center py-12 text-stone-500 dark:text-stone-400 text-sm">No users found</p>
+        )}
+        {filteredUsers.map((user) => (
+          <div key={user.id} className="bg-white dark:bg-stone-800 rounded-xl shadow-sm px-4 py-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-medium text-sm">{user.fullName}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{user.militaryId}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  user.systemRole === "Admin"
+                    ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
+                    : user.systemRole === "Temp_Admin"
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
+                    : "bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-400"
+                }`}>
+                  {user.systemRole === "Temp_Admin" ? "Temp Admin" : user.systemRole}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (openMenuId === user.id) {
+                      setOpenMenuId(null);
+                      setMenuPosition(null);
+                    } else {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setMenuPosition({ top: rect.bottom + window.scrollY, right: window.innerWidth - rect.right });
+                      setOpenMenuId(user.id);
+                    }
+                  }}
+                  className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-stone-600 dark:text-stone-400">
+              <span><span className="text-stone-400 dark:text-stone-500">Rank </span>{getRankLabel(user.rank)}</span>
+              <span><span className="text-stone-400 dark:text-stone-500">Job </span>{user.job}</span>
+              <span><span className="text-stone-400 dark:text-stone-500">Phone </span>{formatPhone(user.phoneNumber)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white dark:bg-stone-800 rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-stone-200 dark:border-stone-700">
               <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Name</th>
               <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Military ID</th>
-              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden md:table-cell">Rank</th>
-              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden md:table-cell">Job</th>
-              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden lg:table-cell">Phone</th>
-              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden lg:table-cell">Role</th>
+              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Rank</th>
+              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Job</th>
+              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Phone</th>
+              <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Role</th>
               <th className="text-right px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Actions</th>
             </tr>
           </thead>
@@ -207,16 +260,14 @@ export default function UsersTab() {
               <tr key={user.id} className="border-b border-stone-100 dark:border-stone-700/50 hover:bg-stone-50 dark:hover:bg-stone-700/30">
                 <td className="px-4 py-3 font-medium">{user.fullName}</td>
                 <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{user.militaryId}</td>
-                <td className="px-4 py-3 text-stone-600 dark:text-stone-400 hidden md:table-cell">{getRankLabel(user.rank)}</td>
-                <td className="px-4 py-3 hidden md:table-cell">
+                <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{getRankLabel(user.rank)}</td>
+                <td className="px-4 py-3">
                   <span className="px-2 py-0.5 bg-stone-100 dark:bg-stone-700 rounded text-xs font-medium">
                     {user.job}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-stone-600 dark:text-stone-400 hidden lg:table-cell">
-                  {formatPhone(user.phoneNumber)}
-                </td>
-                <td className="px-4 py-3 hidden lg:table-cell">
+                <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{formatPhone(user.phoneNumber)}</td>
+                <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                     user.systemRole === "Admin"
                       ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
@@ -227,31 +278,25 @@ export default function UsersTab() {
                     {user.systemRole === "Temp_Admin" ? "Temp Admin" : user.systemRole}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right relative">
+                <td className="px-4 py-3 text-right">
                   <button
-                    onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (openMenuId === user.id) {
+                        setOpenMenuId(null);
+                        setMenuPosition(null);
+                      } else {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setMenuPosition({ top: rect.bottom + window.scrollY, right: window.innerWidth - rect.right });
+                        setOpenMenuId(user.id);
+                      }
+                    }}
                     className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
                     </svg>
                   </button>
-                  {openMenuId === user.id && (
-                    <div className="absolute right-4 top-full z-10 bg-white dark:bg-stone-700 rounded-lg shadow-lg border border-stone-200 dark:border-stone-600 py-1 min-w-[120px]">
-                      <button
-                        onClick={() => { setEditModal(user); setOpenMenuId(null); }}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => { setDeleteModal(user); setOpenMenuId(null); }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
                 </td>
               </tr>
             ))}
@@ -265,6 +310,31 @@ export default function UsersTab() {
           </tbody>
         </table>
       </div>
+
+      {/* Actions dropdown menu */}
+      {openMenuId && menuPosition && (() => {
+        const user = users.find((u) => u.id === openMenuId);
+        if (!user) return null;
+        return (
+          <div
+            style={{ position: "fixed", top: menuPosition.top, right: menuPosition.right, zIndex: 50 }}
+            className="bg-white dark:bg-stone-700 rounded-lg shadow-lg border border-stone-200 dark:border-stone-600 py-1 min-w-[120px]"
+          >
+            <button
+              onClick={() => { setEditModal(user); setOpenMenuId(null); setMenuPosition(null); }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => { setDeleteModal(user); setOpenMenuId(null); setMenuPosition(null); }}
+              className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Delete confirmation modal */}
       <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Confirm Delete">
@@ -294,7 +364,9 @@ export default function UsersTab() {
       </Modal>
     </div>
   );
-}
+});
+
+export default UsersTab;
 
 function EditUserForm({
   user,

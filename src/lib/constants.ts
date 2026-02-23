@@ -42,3 +42,22 @@ export function formatPhone(phone: string): string {
 export function getRankLabel(value: string): string {
   return RANKS.find((r) => r.value === value)?.label || value;
 }
+
+export function formatDate(value: string | Date): string {
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function formatDateTime(value: string | Date): string {
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}

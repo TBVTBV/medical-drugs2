@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 
 export interface SignaturePadHandle {
   toDataURL: () => string;
@@ -20,6 +21,8 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
     const [mounted, setMounted] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [SigCanvas, setSigCanvas] = useState<any>(null);
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === "dark";
 
     useEffect(() => {
       setMounted(true);
@@ -54,8 +57,10 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
               width,
               height,
               className: "rounded-lg",
+              style: { background: isDark ? "#292524" : "#ffffff" },
             }}
-            penColor="#1a1a1a"
+            backgroundColor={isDark ? "#292524" : "#ffffff"}
+            penColor={isDark ? "#ffffff" : "#1a1a1a"}
           />
         </div>
         <div>

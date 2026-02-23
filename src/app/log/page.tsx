@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import Papa from "papaparse";
+import { formatDateTime } from "@/lib/constants";
 
 interface ActionLog {
   id: string;
@@ -23,6 +24,8 @@ interface ActionLog {
 }
 
 const actionColors: Record<string, string> = {
+  Received: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300",
+  "Shipment Removed": "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
   Given: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
   Administered: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
   Returned: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300",
@@ -30,6 +33,8 @@ const actionColors: Record<string, string> = {
 };
 
 const actionLabels: Record<string, string> = {
+  Received: "Shipment Received",
+  "Shipment Removed": "Shipment Removed",
   Given: "Was Given",
   Administered: "Administered",
   Returned: "Returned",
@@ -59,7 +64,7 @@ export default function LogPage() {
       "Action Type": actionLabels[log.actionType] || log.actionType,
       "Actiq Amount": log.actiqAmount,
       "Other Drugs": log.otherDrugsText || "",
-      Timestamp: new Date(log.timestamp).toLocaleString(),
+      Timestamp: formatDateTime(log.timestamp),
       Admin: log.admin.fullName,
       Soldier: log.soldier.fullName,
       "Soldier ID": log.soldier.militaryId,
@@ -87,10 +92,10 @@ export default function LogPage() {
     );
   }
 
-  return (
-    <AppShell>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">Assignment Log</h1>
+  const stickyHeader = (
+    <div>
+      <div className="flex items-center justify-between py-3">
+        <h1 className="text-xl font-bold">Log</h1>
         <button
           onClick={handleExport}
           className="px-4 py-2 bg-stone-200 dark:bg-stone-700 rounded-lg text-sm font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
@@ -98,9 +103,7 @@ export default function LogPage() {
           Export CSV
         </button>
       </div>
-
-      {/* Filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-2 pb-3 overflow-x-auto">
         <button
           onClick={() => setFilterType("")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
@@ -125,7 +128,11 @@ export default function LogPage() {
           </button>
         ))}
       </div>
+    </div>
+  );
 
+  return (
+    <AppShell stickyHeader={stickyHeader}>
       {/* Log Feed */}
       <div className="space-y-3">
         {filteredLogs.map((log) => (
@@ -138,7 +145,7 @@ export default function LogPage() {
                 {actionLabels[log.actionType] || log.actionType}
               </span>
               <span className="text-xs text-stone-400 dark:text-stone-500">
-                {new Date(log.timestamp).toLocaleString()}
+                {formatDateTime(log.timestamp)}
               </span>
             </div>
 
@@ -155,15 +162,26 @@ export default function LogPage() {
                   <span className="text-stone-700 dark:text-stone-300">{log.otherDrugsText}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-stone-500 dark:text-stone-400">By:</span>
-                <span className="font-medium">{log.admin.fullName}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-stone-500 dark:text-stone-400">To:</span>
-                <span className="font-medium">{log.soldier.fullName}</span>
-                <span className="text-xs text-stone-400">({log.soldier.militaryId})</span>
-              </div>
+              {(log.actionType === "Received" || log.actionType === "Shipment Removed") ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-stone-500 dark:text-stone-400">
+                    {log.actionType === "Received" ? "Received by:" : "Removed by:"}
+                  </span>
+                  <span className="font-medium">{log.admin.fullName}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-stone-500 dark:text-stone-400">By:</span>
+                    <span className="font-medium">{log.admin.fullName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-stone-500 dark:text-stone-400">To:</span>
+                    <span className="font-medium">{log.soldier.fullName}</span>
+                    <span className="text-xs text-stone-400">({log.soldier.militaryId})</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {log.signatureImageUrl && (
@@ -192,7 +210,7 @@ export default function LogPage() {
         {viewSignature && (
           <div className="flex justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={viewSignature} alt="Signature" className="max-w-full border rounded-lg" />
+            <img src={viewSignature} alt="Signature" className="max-w-full border rounded-lg dark:invert" />
           </div>
         )}
       </Modal>

@@ -16,7 +16,7 @@ model User {
   job                 String
   phoneNumber         String   @map("phone_number")
   systemRole          String   @default("General") @map("system_role")
-  email               String?
+  email               String?  @unique
   roleExpirationDate  DateTime? @map("role_expiration_date")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")

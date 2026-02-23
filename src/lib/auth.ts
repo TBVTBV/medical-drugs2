@@ -5,10 +5,19 @@ import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma as never),
+  logger: {
+    error(error) {
+      console.error("[auth][detailed-error]", error);
+      if (error instanceof Error && error.cause) {
+        console.error("[auth][error-cause]", error.cause);
+      }
+    },
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {

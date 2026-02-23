@@ -17,41 +17,39 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
-  const { batches, otherDrugsNotes } = body;
+  const { batches } = await req.json();
 
-  const results = [];
-
-  // Handle Actiq batches
-  if (batches && Array.isArray(batches)) {
-    for (const batch of batches) {
-      const result = await prisma.inventoryBatch.create({
-        data: {
-          drugCategory: "Actiq",
-          amountReceived: parseInt(batch.amount),
-          dateReceived: new Date(batch.dateReceived),
-          receivingAdminId: batch.receivingUserId,
-          lotNumber: batch.lotNumber || null,
-          expirationDate: batch.expirationDate ? new Date(batch.expirationDate) : null,
-        },
-      });
-      results.push(result);
-    }
+  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+    return NextResponse.json({ error: "No batches provided" }, { status: 400 });
   }
 
-  // Handle other drugs notes
-  if (otherDrugsNotes) {
-    const adminId = (session.user as Record<string, unknown>).id as string;
-    const result = await prisma.inventoryBatch.create({
+  const adminId = (session.user as Record<string, unknown>).id as string;
+  const results = [];
+
+  for (const batch of batches) {
+    const record = await prisma.inventoryBatch.create({
       data: {
-        drugCategory: "Other",
-        amountReceived: 0,
-        dateReceived: new Date(),
-        receivingAdminId: adminId,
-        otherDrugsNotes,
+        drugCategory: "Actiq",
+        amountReceived: batch.amount ? parseInt(batch.amount) : 0,
+        dateReceived: new Date(batch.dateReceived),
+        receivingAdminId: batch.receivingUserId,
+        lotNumber: batch.lotNumber || null,
+        expirationDate: batch.expirationDate ? new Date(batch.expirationDate) : null,
+        otherDrugsNotes: batch.otherDrugsNotes?.trim() || null,
       },
     });
-    results.push(result);
+
+    await prisma.actionLog.create({
+      data: {
+        actionType: "Received",
+        actiqAmount: record.amountReceived,
+        otherDrugsText: record.otherDrugsNotes,
+        adminId,
+        soldierId: batch.receivingUserId,
+      },
+    });
+
+    results.push(record);
   }
 
   return NextResponse.json(results, { status: 201 });

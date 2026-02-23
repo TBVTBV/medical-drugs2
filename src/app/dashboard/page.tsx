@@ -7,6 +7,7 @@ import Modal from "@/components/Modal";
 import AssignDrugModal from "./AssignDrugModal";
 import UpdateStatusModal from "./UpdateStatusModal";
 import DashboardCharts from "./DashboardCharts";
+import { formatDate } from "@/lib/constants";
 
 interface Assignment {
   id: string;
@@ -73,19 +74,21 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-    <AppShell>
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+  const stickyHeader = (
+    <div className="flex items-center justify-between py-3">
+      <h1 className="text-xl font-bold">Dashboard</h1>
+      <button
+        onClick={() => setShowAssignModal(true)}
+        className="px-4 py-2 bg-[#5c6b3c] text-white rounded-lg text-sm font-medium hover:bg-[#4d5a32] transition-colors"
+      >
+        + Assign Drug
+      </button>
+    </div>
+  );
 
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">Dashboard</h1>
-        <button
-          onClick={() => setShowAssignModal(true)}
-          className="px-4 py-2 bg-[#5c6b3c] text-white rounded-lg text-sm font-medium hover:bg-[#4d5a32] transition-colors"
-        >
-          + Assign Drug
-        </button>
-      </div>
+  return (
+    <AppShell stickyHeader={stickyHeader}>
+      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-3 mb-4">
@@ -112,29 +115,65 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Assigned Drugs Table */}
-      <div className="bg-white dark:bg-stone-800 rounded-xl shadow-sm mt-4">
-        <div className="flex items-center justify-between p-4 border-b border-stone-200 dark:border-stone-700">
+      {/* Assigned Drugs */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold">Assigned Drugs</h2>
           {filterJob && (
-            <button
-              onClick={() => setFilterJob("")}
-              className="text-xs text-[#5c6b3c] hover:underline"
-            >
+            <button onClick={() => setFilterJob("")} className="text-xs text-[#5c6b3c] hover:underline">
               Clear filter: {filterJob}
             </button>
           )}
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-3">
+          {filteredAssignments.length === 0 && (
+            <p className="text-center py-12 text-stone-500 dark:text-stone-400 text-sm">No active drug assignments</p>
+          )}
+          {filteredAssignments.map((a) => (
+            <div key={a.id} className="bg-white dark:bg-stone-800 rounded-xl shadow-sm px-4 py-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium text-sm">{a.soldier.fullName}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{a.soldier.militaryId}</p>
+                </div>
+                <button
+                  onClick={() => setUpdateStatusSoldier(a)}
+                  className="shrink-0 px-3 py-1.5 bg-stone-100 dark:bg-stone-700 rounded-lg text-xs font-medium hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors"
+                >
+                  Update Status
+                </button>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-stone-600 dark:text-stone-400">
+                <span><span className="text-stone-400 dark:text-stone-500">Job </span>{a.soldier.job}</span>
+                <span><span className="text-stone-400 dark:text-stone-500">Actiqs </span><strong>{a.actiqBalance}</strong></span>
+                <span><span className="text-stone-400 dark:text-stone-500">Date </span>{formatDate(a.lastAssignedDate)}</span>
+                <span><span className="text-stone-400 dark:text-stone-500">By </span>{a.assignedBy.fullName}</span>
+              </div>
+              {a.otherDrugsText && (
+                <button
+                  onClick={() => setViewOtherDrugs(a.otherDrugsText)}
+                  className="mt-2 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                >
+                  View Other Drugs
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block bg-white dark:bg-stone-800 rounded-xl shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-700">
                 <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Soldier</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden sm:table-cell">Job</th>
+                <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Job</th>
                 <th className="text-center px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Actiqs</th>
                 <th className="text-center px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Other</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden md:table-cell">Date</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400 hidden lg:table-cell">Assigned By</th>
+                <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Assigned By</th>
                 <th className="text-right px-4 py-3 font-medium text-stone-500 dark:text-stone-400">Action</th>
               </tr>
             </thead>
@@ -142,7 +181,7 @@ export default function DashboardPage() {
               {filteredAssignments.map((a) => (
                 <tr key={a.id} className="border-b border-stone-100 dark:border-stone-700/50 hover:bg-stone-50 dark:hover:bg-stone-700/30">
                   <td className="px-4 py-3 font-medium">{a.soldier.fullName}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
+                  <td className="px-4 py-3">
                     <span className="px-2 py-0.5 bg-stone-100 dark:bg-stone-700 rounded text-xs font-medium">
                       {a.soldier.job}
                     </span>
@@ -160,12 +199,8 @@ export default function DashboardPage() {
                       <span className="text-stone-300 dark:text-stone-600">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-stone-500 dark:text-stone-400 hidden md:table-cell">
-                    {new Date(a.lastAssignedDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-stone-500 dark:text-stone-400 hidden lg:table-cell">
-                    {a.assignedBy.fullName}
-                  </td>
+                  <td className="px-4 py-3 text-stone-500 dark:text-stone-400">{formatDate(a.lastAssignedDate)}</td>
+                  <td className="px-4 py-3 text-stone-500 dark:text-stone-400">{a.assignedBy.fullName}</td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => setUpdateStatusSoldier(a)}
