@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-olive: #5c6b3c;
+    --color-olive-light: #7a8c56;
+    --color-olive-dark: #3d4728;
+    --color-khaki: #c3b091;
+    --color-khaki-light: #d4c5a9;
+  }
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Signature canvas styling */
+.signature-canvas {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  cursor: crosshair;
+}
+
+.dark .signature-canvas {
+  border-color: #4b5563;
+}

@@ -1,0 +1,106 @@
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "military_id" TEXT NOT NULL,
+    "full_name" TEXT NOT NULL,
+    "rank" TEXT NOT NULL,
+    "job" TEXT NOT NULL,
+    "phone_number" TEXT NOT NULL,
+    "system_role" TEXT NOT NULL DEFAULT 'General',
+    "email" TEXT,
+    "role_expiration_date" DATETIME,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "accounts" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "user_id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "provider_account_id" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+    CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "sessions" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "session_token" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "expires" DATETIME NOT NULL,
+    CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "verification_tokens" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "inventory_batches" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "drug_category" TEXT NOT NULL,
+    "amount_received" INTEGER NOT NULL DEFAULT 0,
+    "date_received" DATETIME NOT NULL,
+    "receiving_admin_id" TEXT NOT NULL,
+    "lot_number" TEXT,
+    "expiration_date" DATETIME,
+    "other_drugs_notes" TEXT,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "inventory_batches_receiving_admin_id_fkey" FOREIGN KEY ("receiving_admin_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "active_assignments" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "soldier_id" TEXT NOT NULL,
+    "actiq_balance" INTEGER NOT NULL DEFAULT 0,
+    "other_drugs_text" TEXT,
+    "last_assigned_date" DATETIME NOT NULL,
+    "last_assigned_by" TEXT NOT NULL,
+    "updated_at" DATETIME NOT NULL,
+    CONSTRAINT "active_assignments_soldier_id_fkey" FOREIGN KEY ("soldier_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "active_assignments_last_assigned_by_fkey" FOREIGN KEY ("last_assigned_by") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "action_logs" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "action_type" TEXT NOT NULL,
+    "actiq_amount" INTEGER NOT NULL DEFAULT 0,
+    "other_drugs_text" TEXT,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "admin_id" TEXT NOT NULL,
+    "soldier_id" TEXT NOT NULL,
+    "signature_image_url" TEXT,
+    CONSTRAINT "action_logs_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "action_logs_soldier_id_fkey" FOREIGN KEY ("soldier_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_military_id_key" ON "users"("military_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "accounts_provider_provider_account_id_key" ON "accounts"("provider", "provider_account_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "sessions_session_token_key" ON "sessions"("session_token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_token_key" ON "verification_tokens"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_tokens"("identifier", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "active_assignments_soldier_id_key" ON "active_assignments"("soldier_id");

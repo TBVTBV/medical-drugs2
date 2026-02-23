@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(uuid())
+  militaryId          String   @unique @map("military_id")
+  fullName            String   @map("full_name")
+  rank                String
+  job                 String
+  phoneNumber         String   @map("phone_number")
+  systemRole          String   @default("General") @map("system_role")
+  email               String?
+  roleExpirationDate  DateTime? @map("role_expiration_date")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  inventoryBatchesReceived InventoryBatch[] @relation("ReceivingAdmin")
+  activeAssignment         ActiveAssignment? @relation("SoldierAssignment")
+  assignedBy               ActiveAssignment[] @relation("AssignedByAdmin")
+  actionLogsAsAdmin        ActionLog[] @relation("AdminAction")
+  actionLogsAsSoldier      ActionLog[] @relation("SoldierAction")
+
+  // NextAuth
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model InventoryBatch {
+  id               String   @id @default(uuid())
+  drugCategory     String   @map("drug_category") // Actiq or Other
+  amountReceived   Int      @default(0) @map("amount_received")
+  dateReceived     DateTime @map("date_received")
+  receivingAdminId String   @map("receiving_admin_id")
+  lotNumber        String?  @map("lot_number")
+  expirationDate   DateTime? @map("expiration_date")
+  otherDrugsNotes  String?  @map("other_drugs_notes")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  receivingAdmin User @relation("ReceivingAdmin", fields: [receivingAdminId], references: [id])
+
+  @@map("inventory_batches")
+}
+
+model ActiveAssignment {
+  id               String   @id @default(uuid())
+  soldierId        String   @unique @map("soldier_id")
+  actiqBalance     Int      @default(0) @map("actiq_balance")
+  otherDrugsText   String?  @map("other_drugs_text")
+  lastAssignedDate DateTime @map("last_assigned_date")
+  lastAssignedBy   String   @map("last_assigned_by")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  soldier    User @relation("SoldierAssignment", fields: [soldierId], references: [id])
+  assignedBy User @relation("AssignedByAdmin", fields: [lastAssignedBy], references: [id])
+
+  @@map("active_assignments")
+}
+
+model ActionLog {
+  id                String   @id @default(uuid())
+  actionType        String   @map("action_type") // Given, Administered, Returned, Lost/Damaged
+  actiqAmount       Int      @default(0) @map("actiq_amount")
+  otherDrugsText    String?  @map("other_drugs_text")
+  timestamp         DateTime @default(now())
+  adminId           String   @map("admin_id")
+  soldierId         String   @map("soldier_id")
+  signatureImageUrl String?  @map("signature_image_url")
+
+  admin   User @relation("AdminAction", fields: [adminId], references: [id])
+  soldier User @relation("SoldierAction", fields: [soldierId], references: [id])
+
+  @@map("action_logs")
+}
