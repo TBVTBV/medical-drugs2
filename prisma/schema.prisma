@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -77,7 +78,7 @@ model VerificationToken {
 
 model InventoryBatch {
   id               String   @id @default(uuid())
-  drugCategory     String   @map("drug_category") // Actiq or Other
+  drugCategory     String   @map("drug_category")
   amountReceived   Int      @default(0) @map("amount_received")
   dateReceived     DateTime @map("date_received")
   receivingAdminId String   @map("receiving_admin_id")
@@ -108,7 +109,7 @@ model ActiveAssignment {
 
 model ActionLog {
   id                String   @id @default(uuid())
-  actionType        String   @map("action_type") // Given, Administered, Returned, Lost/Damaged
+  actionType        String   @map("action_type")
   actiqAmount       Int      @default(0) @map("actiq_amount")
   otherDrugsText    String?  @map("other_drugs_text")
   timestamp         DateTime @default(now())
