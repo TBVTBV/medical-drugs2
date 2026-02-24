@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -28,16 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Cannot process more Actiqs than currently assigned" }, { status: 400 });
   }
 
-  // Save signature if provided (required for Returns)
-  let signatureUrl: string | null = null;
-  if (signatureData) {
-    const sigDir = path.join(process.cwd(), "public", "signatures");
-    await mkdir(sigDir, { recursive: true });
-    const filename = `sig_${Date.now()}_${soldierId}_${actionType}.png`;
-    const base64Data = signatureData.replace(/^data:image\/\w+;base64,/, "");
-    await writeFile(path.join(sigDir, filename), Buffer.from(base64Data, "base64"));
-    signatureUrl = `/signatures/${filename}`;
-  }
+  const signatureUrl: string | null = signatureData || null;
 
   // Update active assignment
   const newBalance = assignment.actiqBalance - actiqCount;
