@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import AppShell from "@/components/AppShell";
-import UsersTab, { type UsersTabHandle } from "./UsersTab";
+import UsersTab from "./UsersTab";
 import DrugManagementTab from "./DrugManagementTab";
 import SettingsTab from "./SettingsTab";
 
 const tabs = [
-  { id: "users", label: "Users" },
+  { id: "users", label: "Soldiers" },
   { id: "drugs", label: "Drug Management" },
   { id: "settings", label: "Settings" },
 ] as const;
@@ -17,31 +16,12 @@ type TabId = (typeof tabs)[number]["id"];
 
 export default function ManagementPage() {
   const [activeTab, setActiveTab] = useState<TabId>("users");
-  const router = useRouter();
-  const usersTabRef = useRef<UsersTabHandle>(null);
 
   const stickyHeader = (
     <div>
       <div className="flex items-center justify-between pt-3 pb-2">
         <h1 className="text-xl font-bold">Management</h1>
-        <div className="flex gap-2">
-          {activeTab === "users" && (
-            <>
-              <button
-                onClick={() => router.push("/management/users/new")}
-                className="px-3 py-1.5 bg-[#5c6b3c] text-white rounded-lg text-sm font-medium hover:bg-[#4d5a32] transition-colors"
-              >
-                + Add User
-              </button>
-              <button
-                onClick={() => usersTabRef.current?.export()}
-                className="px-3 py-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg text-sm font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
-              >
-                Export CSV
-              </button>
-            </>
-          )}
-        </div>
+        <div className="flex gap-2"></div>
       </div>
       <div className="flex">
         {tabs.map((tab) => (
@@ -63,7 +43,7 @@ export default function ManagementPage() {
 
   return (
     <AppShell stickyHeader={stickyHeader}>
-      {activeTab === "users" && <UsersTab ref={usersTabRef} />}
+      {activeTab === "users" && <UsersTab />}
       {activeTab === "drugs" && <DrugManagementTab />}
       {activeTab === "settings" && <SettingsTab />}
     </AppShell>

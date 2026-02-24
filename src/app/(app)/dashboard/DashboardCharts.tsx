@@ -12,6 +12,7 @@ interface DashboardData {
 }
 
 const COLORS = ["#5c6b3c", "#c3b091", "#7a8c56", "#8b7355", "#a3b18a", "#d4c5a9"];
+const ACTIQ_COLORS = ["#5c6b3c", "#d97706", "#7a8c56"];
 
 export default function DashboardCharts({
   dashData,
@@ -52,9 +53,10 @@ export default function DashboardCharts({
                   outerRadius={80}
                   paddingAngle={2}
                   dataKey="value"
+                  stroke="none"
                 >
                   {actiqPieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={ACTIQ_COLORS[index % ACTIQ_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -82,6 +84,7 @@ export default function DashboardCharts({
                   outerRadius={80}
                   paddingAngle={2}
                   dataKey="value"
+                  stroke="none"
                 >
                   {otherDrugsPieData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

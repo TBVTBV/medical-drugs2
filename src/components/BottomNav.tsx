@@ -18,11 +18,10 @@ const navItems = [
     label: "Dashboard",
     href: "/dashboard",
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
       </svg>
     ),
-    isMain: true,
   },
   {
     label: "Log",
@@ -40,22 +39,18 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-stone-800 border-t border-stone-200 dark:border-stone-700 z-50 safe-area-bottom">
-      <div className="max-w-lg mx-auto flex items-center justify-around py-1">
+      <div className="max-w-lg mx-auto flex items-center py-1">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors ${
-                item.isMain
-                  ? isActive
-                    ? "text-white bg-[#5c6b3c]"
-                    : "text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-700"
-                  : isActive
-                  ? "text-[#5c6b3c] dark:text-[#7a8c56]"
-                  : "text-stone-500 dark:text-stone-400"
-              } ${item.isMain ? "px-6 py-2.5 -mt-3 shadow-md" : ""}`}
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2 rounded-xl ${
+                isActive
+                  ? "nav-item-active"
+                  : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 transition-colors"
+              }`}
             >
               {item.icon}
               <span className="text-[10px] font-medium">{item.label}</span>

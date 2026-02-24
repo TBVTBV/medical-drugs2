@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { formatPhone, getRankLabel, JOBS, RANKS, SYSTEM_ROLES } from "@/lib/constants";
 import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 import Papa from "papaparse";
-
-export interface UsersTabHandle {
-  export: () => void;
-}
 
 interface User {
   id: string;
@@ -22,7 +19,8 @@ interface User {
   roleExpirationDate: string | null;
 }
 
-const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
+export default function UsersTab() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -61,7 +59,7 @@ const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
       fetchUsers();
     } else {
       const data = await res.json();
-      setToast({ message: data.error || "Failed to delete user", type: "error" });
+      setToast({ message: data.error || "Failed to delete soldier", type: "error" });
     }
     setDeleteModal(null);
   };
@@ -85,10 +83,6 @@ const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  useImperativeHandle(ref, () => ({
-    export: handleExport,
-  }));
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -125,7 +119,7 @@ const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
       body: JSON.stringify(editModal),
     });
     if (res.ok) {
-      setToast({ message: "User updated successfully", type: "success" });
+      setToast({ message: "Soldier updated successfully", type: "success" });
       fetchUsers();
     } else {
       const data = await res.json();
@@ -157,6 +151,18 @@ const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
 
       {/* Actions bar */}
       <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          onClick={() => router.push("/management/users/new")}
+          className="px-4 py-2 bg-[#5c6b3c] text-white rounded-lg text-sm font-medium hover:bg-[#4d5a32] transition-colors"
+        >
+          + Add Soldier
+        </button>
+        <button
+          onClick={handleExport}
+          className="px-4 py-2 bg-stone-200 dark:bg-stone-700 rounded-lg text-sm font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
+        >
+          Export CSV
+        </button>
         <label className="px-4 py-2 bg-stone-200 dark:bg-stone-700 rounded-lg text-sm font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors cursor-pointer">
           Import CSV
           <input
@@ -359,14 +365,12 @@ const UsersTab = forwardRef<UsersTabHandle, object>(function UsersTab(_, ref) {
       </Modal>
 
       {/* Edit modal */}
-      <Modal isOpen={!!editModal} onClose={() => setEditModal(null)} title="Edit User">
+      <Modal isOpen={!!editModal} onClose={() => setEditModal(null)} title="Edit Soldier">
         {editModal && <EditUserForm user={editModal} onChange={setEditModal} onSave={handleEditSave} />}
       </Modal>
     </div>
   );
-});
-
-export default UsersTab;
+}
 
 function EditUserForm({
   user,

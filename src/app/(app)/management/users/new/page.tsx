@@ -79,7 +79,7 @@ export default function NewUserPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold">Add New User</h1>
+          <h1 className="text-xl font-bold">Add New Soldier</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white dark:bg-stone-800 rounded-xl shadow-sm p-6 space-y-5">

@@ -16,6 +16,28 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+button, a {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bottom nav active state animation */
+@keyframes navActivate {
+  from {
+    background-color: transparent;
+    color: rgb(120, 113, 108);
+  }
+  to {
+    background-color: #5c6b3c;
+    color: white;
+  }
+}
+
+.nav-item-active {
+  animation: navActivate 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* Signature canvas styling */
 .signature-canvas {
   border: 2px dashed #d1d5db;

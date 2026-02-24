@@ -221,7 +221,7 @@ export default function DrugManagementTab() {
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-stone-500 dark:text-stone-400">
-                  Receiving User <span className="text-red-500">*</span>
+                  Receiving Soldier <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={batch.receivingUserId}

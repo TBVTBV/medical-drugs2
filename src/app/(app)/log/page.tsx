@@ -46,6 +46,7 @@ export default function LogPage() {
   const [loading, setLoading] = useState(true);
   const [viewSignature, setViewSignature] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("");
+  const [filterUser, setFilterUser] = useState<string>("");
 
   const fetchLogs = useCallback(async () => {
     const res = await fetch("/api/action-logs");
@@ -80,7 +81,15 @@ export default function LogPage() {
     URL.revokeObjectURL(url);
   };
 
-  const filteredLogs = filterType ? logs.filter((l) => l.actionType === filterType) : logs;
+  const uniqueUsers = Array.from(
+    new Map(logs.map((l) => [l.soldier.militaryId, l.soldier])).values()
+  ).sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+  const filteredLogs = logs.filter((l) => {
+    if (filterType && l.actionType !== filterType) return false;
+    if (filterUser && l.soldier.militaryId !== filterUser) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -103,30 +112,27 @@ export default function LogPage() {
           Export CSV
         </button>
       </div>
-      <div className="flex gap-2 pb-3 overflow-x-auto">
-        <button
-          onClick={() => setFilterType("")}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-            !filterType
-              ? "bg-[#5c6b3c] text-white"
-              : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400"
-          }`}
+      <div className="flex gap-2 pb-3">
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="flex-1 min-w-0 px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-lg text-sm bg-white dark:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-[#5c6b3c]"
         >
-          All
-        </button>
-        {Object.entries(actionLabels).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setFilterType(filterType === key ? "" : key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              filterType === key
-                ? "bg-[#5c6b3c] text-white"
-                : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+          <option value="">All Actions</option>
+          {Object.entries(actionLabels).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+        <select
+          value={filterUser}
+          onChange={(e) => setFilterUser(e.target.value)}
+          className="flex-1 min-w-0 px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-lg text-sm bg-white dark:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-[#5c6b3c]"
+        >
+          <option value="">All Soldiers</option>
+          {uniqueUsers.map((u) => (
+            <option key={u.militaryId} value={u.militaryId}>{u.fullName}</option>
+          ))}
+        </select>
       </div>
     </div>
   );

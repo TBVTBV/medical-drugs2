@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import AppShell from "@/components/AppShell";
 import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
+import Papa from "papaparse";
 import AssignDrugModal from "./AssignDrugModal";
 import UpdateStatusModal from "./UpdateStatusModal";
 import DashboardCharts from "./DashboardCharts";
@@ -45,6 +46,7 @@ export default function DashboardPage() {
   const [updateStatusSoldier, setUpdateStatusSoldier] = useState<Assignment | null>(null);
   const [viewOtherDrugs, setViewOtherDrugs] = useState<string | null>(null);
   const [filterJob, setFilterJob] = useState<string>("");
+  const importRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     const [dashRes, assignRes] = await Promise.all([
@@ -59,6 +61,51 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleExportAssignments = () => {
+    const csvData = assignments.map((a) => ({
+      "Military ID": a.soldier.militaryId,
+      "Soldier Name": a.soldier.fullName,
+      Job: a.soldier.job,
+      Actiqs: a.actiqBalance,
+      "Other Drugs": a.otherDrugsText || "",
+      "Last Assigned Date": a.lastAssignedDate,
+      "Assigned By": a.assignedBy.fullName,
+    }));
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `assignments_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportAssignments = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const res = await fetch("/api/assignments/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assignments: results.data }),
+        });
+        const data = await res.json();
+        if (data.imported > 0) {
+          setToast({ message: `${data.imported} assignments imported successfully`, type: "success" });
+          fetchData();
+        }
+        if (data.errors?.length > 0) {
+          setToast({ message: data.errors.join("; "), type: "error" });
+        }
+      },
+    });
+    if (importRef.current) importRef.current.value = "";
+  };
 
   const filteredAssignments = filterJob
     ? assignments.filter((a) => a.soldier.job === filterJob)
@@ -92,17 +139,17 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-white dark:bg-stone-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Total Actiqs</p>
-          <p className="text-2xl font-bold">{dashData?.totalActiqs || 0}</p>
+        <div className="bg-white dark:bg-stone-800 rounded-xl p-4 shadow-sm min-w-0">
+          <p className="text-xs text-stone-500 dark:text-stone-400 mb-1 truncate">Total Actiqs</p>
+          <p className="text-2xl font-bold truncate">{dashData?.totalActiqs || 0}</p>
         </div>
-        <div className="bg-white dark:bg-stone-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Available</p>
-          <p className="text-2xl font-bold text-[#5c6b3c]">{dashData?.availableActiqs || 0}</p>
+        <div className="bg-white dark:bg-stone-800 rounded-xl p-4 shadow-sm min-w-0">
+          <p className="text-xs text-stone-500 dark:text-stone-400 mb-1 truncate">Available</p>
+          <p className="text-2xl font-bold text-[#5c6b3c] truncate">{dashData?.availableActiqs || 0}</p>
         </div>
-        <div className="bg-white dark:bg-stone-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Assigned</p>
-          <p className="text-2xl font-bold text-amber-600">{dashData?.assignedActiqs || 0}</p>
+        <div className="bg-white dark:bg-stone-800 rounded-xl p-4 shadow-sm min-w-0">
+          <p className="text-xs text-stone-500 dark:text-stone-400 mb-1 truncate">Assigned</p>
+          <p className="text-2xl font-bold text-amber-600 truncate">{dashData?.assignedActiqs || 0}</p>
         </div>
       </div>
 
@@ -119,11 +166,23 @@ export default function DashboardPage() {
       <div className="mt-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold">Assigned Drugs</h2>
-          {filterJob && (
-            <button onClick={() => setFilterJob("")} className="text-xs text-[#5c6b3c] hover:underline">
-              Clear filter: {filterJob}
+          <div className="flex items-center gap-2">
+            {filterJob && (
+              <button onClick={() => setFilterJob("")} className="text-xs text-[#5c6b3c] hover:underline">
+                Clear filter: {filterJob}
+              </button>
+            )}
+            <button
+              onClick={handleExportAssignments}
+              className="px-3 py-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg text-xs font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
+            >
+              Export CSV
             </button>
-          )}
+            <label className="px-3 py-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg text-xs font-medium hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors cursor-pointer">
+              Import CSV
+              <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImportAssignments} />
+            </label>
+          </div>
         </div>
 
         {/* Mobile cards */}
